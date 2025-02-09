@@ -1,9 +1,9 @@
 const registry = {};
 
 /** @type {RenderWrapper} */
-const renderWrapper = (component) => (targetElement, state) => {
+const renderWrapper = (component) => (targetElement, state, events) => {
   /**  @type {HTMLElement} */
-  const element = component(targetElement, state);
+  const element = component(targetElement, state, events);
 
   const childComponents = element.querySelectorAll('[data-component]');
 
@@ -14,7 +14,7 @@ const renderWrapper = (component) => (targetElement, state) => {
 
     if (!child) return;
 
-    target.replaceWith(child(target, state));
+    target.replaceWith(child(target, state, events));
   });
 
   return element;
@@ -23,14 +23,15 @@ const renderWrapper = (component) => (targetElement, state) => {
 /**
  * @param {HTMLElement} root
  * @param {State} state
+ * @param {Events} events
  */
-const renderRoot = (root, state) => {
+const renderRoot = (root, state, events) => {
   /** @type {Component} */
   const cloneComponent = (root) => {
     return root.cloneNode(true);
   };
 
-  return renderWrapper(cloneComponent)(root, state);
+  return renderWrapper(cloneComponent)(root, state, events);
 };
 
 /**

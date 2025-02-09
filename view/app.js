@@ -1,22 +1,43 @@
-import todosView from './todos.js';
-import counterView from './counter.js';
-import filtersView from './filters.js';
+/** @type {Template} */
+let template;
+
+const getTemplate = () => {
+  if (!template) {
+    const appTemplate = document.getElementById('todo-app');
+
+    if (!appTemplate) return;
+
+    template = appTemplate;
+  }
+
+  return template.content.firstElementChild.cloneNode(true);
+};
 
 /**
- * @param {HTMLDivElement} targetElement
- * @param {State} state
- * @return {Node}
+ * @param {HTMLElement} targetElement
+ * @param {Events} events
  */
-export default (targetElement, state) => {
-  const element = targetElement.cloneNode(true);
+const addEvents = (targetElement, events) => {
+  targetElement.querySelector('.new-todo').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      events.addItem(e.target.value);
+      e.target.value = '';
+    }
+  });
+};
 
-  const list = element.querySelector('.todo-list');
-  const counter = element.querySelector('.todo-count');
-  const filters = element.querySelector('.filters');
+/**
+ * @param {HTMLElement} targetElement
+ * @param {State} state
+ * @param {Events} events
+ */
+export default (targetElement, state, events) => {
+  const newApp = targetElement.cloneNode(true);
 
-  list.replaceWith(todosView(list, state));
-  counter.replaceWith(counterView(counter, state));
-  filters.replaceWith(filtersView(filters, state));
+  newApp.innerHTML = '';
+  newApp.appendChild(getTemplate());
 
-  return element;
+  addEvents(newApp, events);
+
+  return newApp;
 };

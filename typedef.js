@@ -5,9 +5,19 @@
  */
 
 /**
+ * @typedef {'All' | 'Active' | 'Completed'} Filter
+ */
+
+/**
  * @typedef {Object} State
  * @property {Todo[]} todos
- * @property {string} currentFilter
+ * @property {Filter} currentFilter
+ */
+
+/**
+ * @typedef {Object} Events
+ * @property {(index: number) => void} deleteItem
+ * @property {(text: string) => void} addItem
  */
 
 /**
@@ -20,6 +30,7 @@
  * @callback Render
  * @param {HTMLElement} targetElement
  * @param {State} state
+ * @param {Events} events
  * @return {HTMLElement}
  * */
 
@@ -49,3 +60,5 @@
  * @param {CustomNode} node2
  * @return {boolean}
  */
+
+/** @typedef {HTMLTemplateElement | null | undefined} Template */
