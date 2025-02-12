@@ -1,49 +1,7 @@
-import todosView from './view/todos.js';
-import counterView from './view/counter.js';
-import filtersView from './view/filters.js';
-import appView from './view/app.js';
-import applyDiff from './applyDiff.js';
+import Application from './components/Application.js';
+import Footer from './components/Footer.js';
+import List from './components/List.js';
 
-import registry from './registry.js';
-
-registry.add('app', appView);
-registry.add('todos', todosView);
-registry.add('counter', counterView);
-registry.add('filters', filtersView);
-
-/** @type {State} */
-const state = {
-  todos: [],
-  currentFilter: 'All',
-};
-
-/** @type {Events} */
-const events = {
-  deleteItem: (index) => {
-    state.todos.splice(index, 1);
-    render();
-  },
-  addItem: (text) => {
-    state.todos.push({
-      text,
-      completed: false,
-    });
-    render();
-  },
-};
-
-const render = () => {
-  window.requestAnimationFrame(() => {
-    const main = document.querySelector('#root');
-
-    const newMain = registry.renderRoot(main, state, events);
-
-    applyDiff({
-      parentNode: document.body,
-      realNode: main,
-      virtualNode: newMain,
-    });
-  });
-};
-
-render();
+window.customElements.define('todomvc-app', Application);
+window.customElements.define('todomvc-footer', Footer);
+window.customElements.define('todomvc-list', List);
