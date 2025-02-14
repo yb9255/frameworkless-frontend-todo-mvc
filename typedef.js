@@ -62,3 +62,12 @@
  */
 
 /** @typedef {HTMLTemplateElement | null | undefined} Template */
+
+/** @typedef {{ fragment: string, component: () => Node }} Route */
+
+/**
+ * @typedef {object} Router
+ * @property {(param: Route) => Router} addRoute
+ * @property {(cb: Function) => Router} setNotFound
+ * @property {() => Router} start
+ * */
