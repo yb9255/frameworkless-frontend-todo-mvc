@@ -64,10 +64,21 @@
 /** @typedef {HTMLTemplateElement | null | undefined} Template */
 
 /** @typedef {{ fragment: string, component: () => Node }} Route */
+/** @typedef {{ fragment: string, component: (params: object) => Node, regex: RegExp }} ProgrammingRoute */
+/** @typedef {{ id: string }} DetailParams */
+/** @typedef {{ id: string, anotherId: string }} AnotherDetailParams */
 
 /**
  * @typedef {object} Router
  * @property {(param: Route) => Router} addRoute
  * @property {(cb: Function) => Router} setNotFound
  * @property {() => Router} start
+ * */
+
+/**
+ * @typedef {object} ProgrammingRouter
+ * @property {(param: ProgrammingRoute) => ProgrammingRouter} addRoute
+ * @property {(cb: Function) => ProgrammingRouter} setNotFound
+ * @property {() => ProgrammingRouter} start
+ * @property {(fragment: string) => void} navigate
  * */
