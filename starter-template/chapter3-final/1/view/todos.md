@@ -12,70 +12,51 @@
 
 ---
 
-## 2. 시그니처
+## 2. 만들어야 할 함수
 
-```js
-(targetElement, state, events) => HTMLElement
-```
+| 이름                | 인자                                           | 반환                                      |
+| ------------------- | ---------------------------------------------- | ----------------------------------------- |
+| `createNewTodoNode` | 없음                                           | `#todo-item` template의 새 복제본(`<li>`) |
+| `getTodoElement`    | `todo`, `index`                                | 내용이 채워진 `<li>`                      |
+| (default export)    | `targetElement`, `{ todos }`, `{ deleteItem }` | `<li>`들이 채워진 새 `<ul>`               |
 
-- `state`에서 **`todos`** 를 사용한다.
-- `events`에서 **`deleteItem`** 을 사용한다.
-- 반환: `<li>`들이 채워진 새 `<ul>`
+- `state`에서 **`todos`** 를, `events`에서 **`deleteItem`** 을 사용한다.
+- `todo` 항목은 `text`와 `completed` 두 키를 가진 객체다.
 
 ---
 
-## 3. 핵심 동작
+## 3. 요구사항
 
 ### (1) template 캐싱 + 복제 (`createNewTodoNode`)
-```js
-let template;
-const createNewTodoNode = () => {
-  if (!template) template = document.getElementById('todo-item');
-  return template.content.firstElementChild.cloneNode(true);
-};
-```
-- `app.js`와 동일한 패턴: 참조는 캐싱, 반환은 매번 새 복제본.
 
-### (2) 할 일 하나 → DOM 변환 (`getTodoElement(todo, index)`)
-```js
-element.querySelector('input.edit').value = text;   // 편집용 input에 값
-element.querySelector('label').textContent = text;  // 표시용 label에 텍스트
+- `app.js`와 동일한 패턴: template **참조는 모듈 스코프에 한 번만 캐싱**하고,
+  **반환은 매번 새 복제본**이어야 한다.
+- template의 첫 번째 자식 요소(`<li>`)를 깊은 복제해서 돌려준다.
 
-if (completed) {
-  element.classList.add('completed');                    // CSS가 취소선 처리
-  element.querySelector('input.toggle').checked = true;  // 체크박스 on
-}
+### (2) 할 일 하나 → DOM 변환 (`getTodoElement`)
 
-element.querySelector('button.destroy').dataset.index = index;  // 삭제용 인덱스 심기
-```
-- **텍스트를 두 군데(`input.edit`, `label`)에 넣는다.** TodoMVC의 보기/편집 모드 구조 때문.
-- `completed`일 때만 클래스와 체크 상태를 켠다. (복제본은 항상 초기 상태이므로 끄는 처리는 불필요)
-- **`dataset.index`에 배열 인덱스를 심는 것이 핵심.** 나중에 위임된 클릭 핸들러가
-  "어떤 항목이 눌렸는지" 알아내는 유일한 수단이다.
-- **`textContent`를 쓰고 `innerHTML`을 쓰지 않는다.** XSS 방지.
+- **텍스트를 두 군데에 넣는다.** 편집용 `input.edit`의 값과 표시용 `label`의 텍스트.
+  TodoMVC의 보기/편집 모드 구조 때문이다.
+- **완료된 항목일 때만** `completed` 클래스를 붙이고(CSS가 취소선 처리)
+  `input.toggle`을 체크 상태로 만든다.
+  복제본은 항상 초기 상태이므로 끄는 처리는 불필요하다.
+- **`button.destroy`의 `dataset`에 배열 인덱스를 심는다.** 이것이 핵심이다.
+  나중에 위임된 클릭 핸들러가 "어떤 항목이 눌렸는지" 알아내는 유일한 수단이다.
+- **HTML 삽입이 아니라 텍스트 설정으로 값을 넣는다.** XSS 방지.
 
 ### (3) 목록 렌더링
-```js
-const newTodoList = targetElement.cloneNode(true);
-newTodoList.innerHTML = '';
-todos.map((todo, index) => getTodoElement(todo, index))
-     .forEach((element) => newTodoList.appendChild(element));
-```
-- 대상 복제 → 비우기 → 전부 다시 채우기. (부분 갱신은 `applyDiff`의 몫)
+
+- `targetElement`를 복제 → 내부를 비우기 → 할 일 전부를 다시 채우기 순서를 지킨다.
+  (부분 갱신은 diff의 몫이므로 여기서는 매번 전부 다시 만든다)
 - `ul.todo-list` 껍데기와 `data-component="todos"` 속성이 유지된다.
 
 ### (4) 이벤트 위임
-```js
-newTodoList.addEventListener('click', (e) => {
-  if (e.target.matches('button.destroy')) {
-    deleteItem(e.target.dataset.index);
-  }
-});
-```
-- **`<li>` 하나하나가 아니라 `<ul>` 하나에만 리스너를 단다.**
+
+- **`<li>` 하나하나가 아니라 `<ul>` 하나에만 클릭 리스너를 단다.**
   할 일이 100개여도 리스너는 1개 → 메모리/성능 이점.
-- `e.target.matches('button.destroy')`로 실제 클릭 대상을 판별한다.
+- 리스너 안에서 **실제 클릭 대상이 삭제 버튼인지 판별한 뒤에만** 처리한다.
   (버튼이 아닌 곳을 눌렀을 때 아무 일도 안 일어나게 하는 가드)
+- 삭제 버튼이면 그 요소의 `dataset` 인덱스를 꺼내 `deleteItem`에 넘긴다.
 - 리스너는 **복제본에** 붙인다.
 
 ---
@@ -83,28 +64,30 @@ newTodoList.addEventListener('click', (e) => {
 ## 4. 충족해야 할 요구사항 체크리스트
 
 - [ ] template 참조를 캐싱하되 매번 새 복제본을 반환한다
-- [ ] `input.edit`의 `value`와 `label`의 `textContent`에 모두 텍스트를 넣는다
-- [ ] `completed`일 때 `completed` 클래스와 `toggle` 체크를 켠다
-- [ ] `button.destroy`의 `dataset.index`에 배열 인덱스를 심는다
-- [ ] `innerHTML` 대신 `textContent`를 쓴다 (XSS 방지)
+- [ ] `input.edit`의 값과 `label`의 텍스트에 모두 할 일 텍스트를 넣는다
+- [ ] 완료된 항목일 때 `completed` 클래스와 `toggle` 체크를 켠다
+- [ ] `button.destroy`의 `dataset`에 배열 인덱스를 심는다
+- [ ] HTML 삽입 대신 텍스트 설정을 쓴다 (XSS 방지)
 - [ ] `targetElement` 복제 → 비우기 → 전체 재구성 순서를 지킨다
 - [ ] 리스너를 `<li>`마다가 아니라 `<ul>` 하나에 위임한다
-- [ ] `matches`로 클릭 대상을 판별한 뒤에만 `deleteItem`을 호출한다
+- [ ] 클릭 대상을 판별한 뒤에만 `deleteItem`을 호출한다
 - [ ] 이벤트를 복제본에 연결한다
+- [ ] 하나의 HTMLElement를 반환한다
 
 ---
 
 ## 5. 주의사항 / 알려진 한계
 
-- **`dataset.index`는 문자열이다.** `deleteItem`에 `"2"` 같은 문자열이 넘어간다.
-  `splice`는 알아서 변환하지만, 엄격히 하려면 `Number(...)` 처리가 필요하다.
+- **`dataset`에서 꺼낸 인덱스는 문자열이다.** `deleteItem`에 `"2"` 같은 값이 넘어간다.
+  배열 제거 메서드는 알아서 변환하지만, 엄격히 하려면 숫자 변환이 필요하다.
 - **인덱스 기반 식별의 취약점.** 항목이 삭제/재정렬되면 인덱스가 밀린다.
-  `applyDiff`에 key 개념이 없는 것과 같은 뿌리의 한계다. 고유 id 도입이 정석.
+  diff에 key 개념이 없는 것과 같은 뿌리의 한계다. 고유 id 도입이 정석.
 - **토글(완료 표시)과 편집(더블클릭) 이벤트가 아직 미구현이다.**
   `input.toggle`은 화면에 상태를 보여줄 뿐 클릭해도 상태가 안 바뀌고,
   `input.edit`도 채워져 있지만 편집 모드 진입 로직이 없다.
-- `checked`는 프로퍼티라 `applyDiff`의 속성 비교에 잡히지 않는다.
+- 체크 상태는 프로퍼티라 diff의 속성 비교에 잡히지 않는다.
   다만 `completed` 클래스(속성)가 같이 바뀌므로 노드 교체는 정상적으로 일어난다.
+- **`currentFilter`를 보지 않는다.** 항상 전체 목록을 그린다. (미완성 지점)
 
 ---
 
